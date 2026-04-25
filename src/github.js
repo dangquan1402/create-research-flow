@@ -3,10 +3,11 @@ import { rm } from 'node:fs/promises';
 import path from 'node:path';
 
 export async function cloneTemplate({ templateRepo, name, cwd }) {
-  await execa('git', ['clone', '--depth', '1', `https://github.com/${templateRepo}.git`, name], {
-    cwd,
-    stdio: 'inherit',
-  });
+  await execa(
+    'git',
+    ['clone', '--depth', '1', '--progress', `https://github.com/${templateRepo}.git`, name],
+    { cwd, stdio: 'inherit' }
+  );
   const dest = path.join(cwd, name);
   await rm(path.join(dest, '.git'), { recursive: true, force: true });
   await execa('git', ['init', '-b', 'main'], { cwd: dest, stdio: 'ignore' });

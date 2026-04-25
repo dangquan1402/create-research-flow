@@ -197,17 +197,18 @@ export async function run(argv) {
   // --- Execute ---
   const s = p.spinner();
 
-  s.start(`Cloning ${TEMPLATE.repo}`);
+  // Network steps with inherited stdio — show git/gh progress natively (no spinner)
+  p.log.step(`Cloning ${TEMPLATE.repo} → ./${name}`);
   const projectRoot = await cloneTemplate({ templateRepo: TEMPLATE.repo, name, cwd });
-  s.stop(`Template cloned into ./${name}`);
+  p.log.success('Template cloned');
 
   s.start('Creating initial commit');
   await initialCommit(projectRoot);
   s.stop('Initial commit created');
 
-  s.start(`Creating GitHub repo ${owner}/${repoName} and pushing`);
+  p.log.step(`Creating GitHub repo ${owner}/${repoName} and pushing (this may take a moment over slow networks)`);
   const repo = await createRepoAndPush({ owner, name: repoName, visibility, cwd: projectRoot });
-  s.stop(`Repo pushed: ${repo}`);
+  p.log.success(`Repo pushed: ${repo}`);
 
   s.start('Seeding labels');
   await createLabels(repo, TEMPLATE.seedLabels);
