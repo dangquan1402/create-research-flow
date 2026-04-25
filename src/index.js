@@ -17,6 +17,7 @@ import {
   createIssue,
   addIssueToProject,
   setProjectColumns,
+  ghHasScope,
 } from './github.js';
 
 export async function run(argv) {
@@ -150,13 +151,38 @@ export async function run(argv) {
   }
 
   // 6. Optional project board + first goal
-  const createProjectBoard =
+  let createProjectBoard =
     !opts.skipProject &&
     (await p.confirm({
       message: `Create a GitHub Project board for ${owner}?`,
       initialValue: true,
     }));
   if (p.isCancel(createProjectBoard)) return cancel();
+
+  if (createProjectBoard && !(await ghHasScope('project'))) {
+    p.log.warn('Your gh token is missing the `project` scope — board creation will fail.');
+    const refresh = await p.confirm({
+      message: 'Run `gh auth refresh -s project,read:project` now to add it?',
+      initialValue: true,
+    });
+    if (p.isCancel(refresh)) return cancel();
+    if (refresh) {
+      try {
+        await execa('gh', ['auth', 'refresh', '-s', 'project,read:project'], { stdio: 'inherit' });
+        p.log.success('Scope added');
+      } catch (err) {
+        p.log.error(`gh auth refresh failed: ${err.shortMessage ?? err.message}`);
+        const proceed = await p.confirm({
+          message: 'Continue without the project board?',
+          initialValue: true,
+        });
+        if (p.isCancel(proceed) || !proceed) return cancel();
+        createProjectBoard = false;
+      }
+    } else {
+      createProjectBoard = false;
+    }
+  }
 
   let projectTitle = opts.projectName || TEMPLATE.projectName;
   if (createProjectBoard && !opts.projectName) {

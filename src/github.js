@@ -56,7 +56,26 @@ export async function createProject({ owner, title }) {
     const { stdout } = await execa('gh', ['project', 'create', '--owner', owner, '--title', title, '--format', 'json']);
     return JSON.parse(stdout);
   } catch (err) {
-    return { error: err.shortMessage ?? err.message };
+    const stderr = (err.stderr || '').trim();
+    const detail = stderr || err.shortMessage || err.message;
+    let hint = '';
+    if (/scope|missing.*project|requires.*project|read:project|project.*scope/i.test(detail)) {
+      hint = ' — your gh token is missing the `project` scope. Fix: `gh auth refresh -s project,repo,workflow`';
+    } else if (/SAML|SSO/i.test(detail)) {
+      hint = ` — owner ${owner} requires SSO authorization for your token. Run: \`gh auth refresh -s project --hostname github.com\` and follow the SSO prompt`;
+    } else if (/not.*found|404/i.test(detail)) {
+      hint = ` — owner "${owner}" not found, or you lack access to create projects there`;
+    }
+    return { error: detail + hint };
+  }
+}
+
+export async function ghHasScope(scope) {
+  try {
+    const { stderr } = await execa('gh', ['auth', 'status'], { reject: false });
+    return new RegExp(`scopes:.*['"\\b]${scope}['"\\b]`, 'i').test(stderr || '');
+  } catch {
+    return false;
   }
 }
 
