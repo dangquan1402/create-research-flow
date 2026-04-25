@@ -2,6 +2,8 @@
 
 Scaffold a new [Research Flow](https://github.com/dangquan1402/research-flow) project — an agentic research system with persistent memory, Claude Code skills, and a GitHub Project board for tracking research goals, hypotheses, and findings.
 
+> **New here?** See [**docs/getting-started.md**](docs/getting-started.md) for a step-by-step setup walkthrough (Node, git, gh, uv, Claude Code) before running the CLI.
+
 ## Quick start
 
 ```bash
