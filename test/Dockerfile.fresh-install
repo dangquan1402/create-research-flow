@@ -1,0 +1,58 @@
+# Proof that create-research-flow's auto-installer works on a clean machine.
+# Base = bare Ubuntu + only what's needed to *run* the CLI itself (Node + git +
+# curl + sudo). No gh, no claude, no uv pre-installed.
+#
+# The CLI's installTool() is exercised directly so we don't need an interactive
+# TTY for the prompt. Each install command is the exact one wired in
+# src/prereqs.js — if any fails, the build fails.
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Bare-minimum host tools: bash, curl, ca-certs, git, sudo (gh's apt
+# installer uses sudo), wget (gh installer also calls it). NO gh/claude/uv.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        bash curl ca-certificates git sudo wget gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node 20 from NodeSource (matches the version the CLI requires)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY bin ./bin
+COPY src ./src
+
+# Sanity: confirm the three target tools are NOT present yet.
+RUN ! command -v gh && ! command -v claude && ! command -v uv \
+    && echo "✓ baseline: gh, claude, uv all absent"
+
+# Drive the auto-installer non-interactively. We import installTool()
+# directly so we don't fight with the clack TTY prompt.
+RUN node -e " \
+    import('./src/prereqs.js').then(async (m) => { \
+      const missing = await m.checkPrereqs(); \
+      console.log('Detected missing:', missing.map(t => t.bin).join(', ')); \
+      for (const tool of missing) { \
+        if (tool.bin === 'git') continue; \
+        console.log('--- installing', tool.bin, '→', tool.install.label); \
+        await m.installTool(tool); \
+        console.log('+++ installed', tool.bin); \
+      } \
+    }).catch((e) => { console.error('FAIL:', e.message); process.exit(1); }); \
+"
+
+# Re-source PATH (uv installer drops into ~/.local/bin)
+ENV PATH=/root/.local/bin:$PATH
+
+# Verify all three are now present and respond to --version
+RUN echo "--- post-install verification ---" \
+    && gh --version | head -1 \
+    && claude --version \
+    && uv --version \
+    && echo "✓ all three installed successfully"

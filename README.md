@@ -36,7 +36,7 @@ npx create-research-flow my-project \
 | **Node 20+** | Runs this CLI | [nodejs.org](https://nodejs.org) or `nvm install 20` |
 | **`git`** | Clones the template, initial commit | macOS: `xcode-select --install` |
 | **`gh`** | Creates the repo, labels, Project board, first issue | macOS: `brew install gh` · Linux: see [cli.github.com](https://cli.github.com) |
-| **`claude`** | Launches Claude Code in the new project | `npm i -g @anthropic-ai/claude-code` |
+| **`claude`** | Launches Claude Code in the new project | `curl -fsSL https://claude.ai/install.sh \| bash` |
 | **`uv`** | Installs the Python deps in the new project | `curl -LsSf https://astral.sh/uv/install.sh | sh` |
 
 > If any of `gh`, `claude`, or `uv` are missing when you run the CLI, it will **prompt you to install them automatically** using the commands above. You can decline and install them yourself.

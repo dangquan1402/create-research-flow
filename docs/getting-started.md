@@ -183,6 +183,14 @@ The agent that operates inside your scaffolded project — runs the `/research`,
 
 ### Install
 
+Official installer (recommended — works without npm):
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+Or via npm if you already have it:
+
 ```bash
 npm i -g @anthropic-ai/claude-code
 ```

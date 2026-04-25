@@ -30,8 +30,12 @@ const TOOLS = [
   {
     bin: 'claude',
     args: ['--version'],
-    hint: 'Claude Code not found. Install: npm i -g @anthropic-ai/claude-code  (or see https://docs.claude.com/claude-code)',
-    install: { cmd: 'npm', args: ['i', '-g', '@anthropic-ai/claude-code'], label: 'npm i -g @anthropic-ai/claude-code', requires: 'npm' },
+    hint: 'Claude Code not found. Install: curl -fsSL https://claude.ai/install.sh | bash  (or see https://docs.claude.com/claude-code)',
+    install: {
+      cmd: 'sh',
+      args: ['-c', 'curl -fsSL https://claude.ai/install.sh | bash'],
+      label: 'curl -fsSL https://claude.ai/install.sh | bash',
+    },
   },
   {
     bin: 'uv',
@@ -58,6 +62,24 @@ export async function checkPrereqs() {
   return missing;
 }
 
+// Install scripts (uv, claude) drop binaries into these dirs but don't touch
+// the running shell's PATH. After installing, prepend them so subsequent
+// has()/execa() calls in this same process find the new binary.
+const POST_INSTALL_PATH_HINTS = [
+  `${os.homedir()}/.local/bin`,
+  `${os.homedir()}/.npm-global/bin`,
+  '/opt/homebrew/bin',
+  '/usr/local/bin',
+];
+
+function augmentPath() {
+  const cur = (process.env.PATH || '').split(':').filter(Boolean);
+  const additions = POST_INSTALL_PATH_HINTS.filter((p) => !cur.includes(p));
+  if (additions.length) {
+    process.env.PATH = [...additions, ...cur].join(':');
+  }
+}
+
 export async function installTool(tool) {
   if (!tool.install) {
     throw new Error(`No automated installer for ${tool.bin}. See: ${tool.hint}`);
@@ -68,10 +90,11 @@ export async function installTool(tool) {
     );
   }
   await execa(tool.install.cmd, tool.install.args, { stdio: 'inherit' });
-  // Re-check after install — uv installer drops into ~/.local/bin which may not be on PATH yet
+  augmentPath();
   if (!(await has(tool.bin, tool.args))) {
     throw new Error(
-      `${tool.bin} still not on PATH after install. You may need to restart your shell, then rerun.`
+      `${tool.bin} installed but not found on PATH. Tried: ${POST_INSTALL_PATH_HINTS.join(', ')}. ` +
+        `If it landed elsewhere, add that dir to PATH and rerun.`
     );
   }
 }
