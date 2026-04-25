@@ -1,6 +1,6 @@
 {
   "name": "create-research-flow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scaffold a new research-flow or dev-workflow project with Claude Code, gh, and a GitHub Project board wired up.",
   "type": "module",
   "bin": {
