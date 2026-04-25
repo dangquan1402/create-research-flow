@@ -1,7 +1,7 @@
 export const TEMPLATE = {
   name: 'research-flow',
   label: 'Research Flow — agentic research system with persistent memory',
-  repo: 'dangquan1402/research-flow',
+  repo: 'dangquan1402/research-flow-template',
   postInstall: ['uv sync'],
   seedLabels: [
     { name: 'research-goal', color: '0E8A16', description: 'Parent research goal' },
